@@ -1,0 +1,118 @@
+
+
+<script type="text/x-red" data-template-name="rdkafka in">
+    <div class="form-row">
+        <label for="node-input-broker"><i class="icon-tag"></i> Broker</label>
+        <input type="text" id="node-input-broker">
+    </div>
+    <div class="form-row">
+        <label for="node-input-topic"><i class="icon-tasks"></i> Topic</label>
+        <input type="text" id="node-input-topic" placeholder="Topic">
+    </div>
+    <div class="form-row">
+        <label for="node-input-cgroup"><i class="icon-tasks"></i> Consumer Group</label>
+        <input type="text" id="node-input-cgroup" placeholder="Consumer Group">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="rdkafka in">
+    <p>Kafka input node. Connects to a broker and subscribes to the specified topic. The topic may contain Kafka wildcard regular expression.
+    </script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('rdkafka in',{
+       category: 'input',
+       defaults: {
+       name: {value:""},
+       topic: {value:"",required:true},
+       broker: {type:"kafka-broker", required:true}
+       },
+       color:"#FFFFFF",
+       inputs:0,
+       outputs:1,
+       icon: "kafka.png",
+       label: function() {
+       return this.name||this.topic||"rdkafka";
+       },
+       labelStyle: function() {
+       return this.name?"node_label_italic":"";
+       }
+    });
+                           
+</script>
+
+<script type="text/x-red" data-template-name="rdkafka out">
+    <div class="form-row">
+        <label for="node-input-broker"><i class="icon-tag"></i> Broker</label>
+        <input type="text" id="node-input-broker">
+    </div>
+    <div class="form-row">
+        <label for="node-input-topic"><i class="icon-tasks"></i> Topic</label>
+        <input type="text" id="node-input-topic" placeholder="Topic">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="rdkafka out">
+    <p>Connects to a Kafka broker and publishes <b>msg.payload</b> to the <b>msg.topic</b> OR to the topic specified in the configuration window. The value in the configuration window has precedence.
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('rdkafka out',{
+       category: 'output',
+       defaults: {
+       name: {value:""},
+       topic: {value:""},
+       broker: {type:"kafka-broker", required:true}
+       },
+       color:"#FFFFFF",
+       inputs:1,
+       outputs:0,
+       icon: "kafka.png",
+       align: "right",
+       label: function() {
+       return this.name||this.topic||"rdkafka";
+       },
+       labelStyle: function() {
+       return this.name?"node_label_italic":"";
+       }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="kafka-broker">
+    <div class="form-row node-input-broker">
+        <label for="node-config-input-broker"><i class="icon-bookmark"></i> Broker List</label>
+        <input class="input-append-left" type="text" id="node-config-input-broker" placeholder="localhost:9092" style="width: 40%;" >
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-clientid"><i class="icon-tag"></i> Client ID</label>
+        <input type="text" id="node-config-input-clientid" placeholder="Leave blank for auto generated">
+    </div>
+    <div class="form-tips">
+        <b>Note:</b>The "Broker List" is a list of Kafka Brokers in the form HOST1:PORT1[,HOST2:PORT2[...]]
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('kafka-broker', {
+        category: 'config',
+        defaults: {
+            broker: { value:"",required:true },
+            clientid: { value:"" }
+        },
+        credentials: {
+        },
+        label: function() {
+            if (this.broker == "") { this.broker = "localhost:9092"; }
+            return (this.clientid?this.clientid+"@":"")+this.broker;
+        }
+    });
+</script>
+
