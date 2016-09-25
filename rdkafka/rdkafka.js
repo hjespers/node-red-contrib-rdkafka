@@ -17,18 +17,25 @@ module.exports = function(RED) {
         RED.nodes.createNode(this,n);
         this.topic = n.topic;
         this.broker = n.broker;
+        this.cgroup = n.cgroup;
         this.brokerConfig = RED.nodes.getNode(this.broker);
         var node = this;
-        var stream;
+        var instream;
         if (this.brokerConfig) {
             node.status({fill:"red",shape:"ring",text:"disconnected"});
             var consumer = new Kafka.KafkaConsumer({
-                'group.id': 'kafka',
-                'metadata.broker.list': 'localhost:9092',
+                'group.id': this.cgroup,
+                'client.id': this.brokerConfig.clientid,
+                'metadata.broker.list': this.brokerConfig.broker   
             }, {});
             if (this.topic) {
-                stream = consumer.getReadStream(this.topic);
-                stream.on('data', function(data) {
+                instream = consumer.getReadStream(this.topic);
+                console.log('[rdkafka] Created input stream on topic = ' + this.topic);
+                console.log('[rdkafka]  group.id = ' + this.cgroup);
+                console.log('[rdkafka]  metadata.broker.list = ' + this.brokerConfig.broker);
+
+
+                instream.on('data', function(data) {
                   console.log('Got message');
                   console.log(data.message.toString());
                   var msg = {
@@ -40,6 +47,13 @@ module.exports = function(RED) {
                   }
                   node.send(msg);
                 });
+
+                instream.on('error', function (err) {
+                      // Here's where we'll know if something went wrong sending to Kafka
+                      console.error('[rdkafka] Error in our kafka input stream');
+                      console.error(err);
+                });  
+
                 node.status({fill:"green",shape:"dot",text:"connected"});
             } else {
                 this.error('missing input topic');
@@ -73,7 +87,8 @@ module.exports = function(RED) {
                'queue.buffering.max.messages': 100000,
                'queue.buffering.max.ms': 1000,
                'batch.num.messages': 1000000,
-               'dr_cb': true    
+               'dr_cb': true,
+               'session.timeout.ms': 5000    
             })
             if (this.topic != "" ) {
                 stream = producer.getWriteStream(this.topic);
