@@ -39,3 +39,5 @@ jspm_packages
 rdkafka/.DS_Store
 
 rdkafka/icons/.DS_Store
+
+.DS_Store
