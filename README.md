@@ -27,7 +27,7 @@ You should see white rdkafka input and output nodes in the pallet on the left si
 
 Drag either rdkafka node to the canvas and double click to configure the topic, brokers, clientID and groupID.
 
-<img src="https://github.com/hjespers/node-red-contrib-rdkafka/blob/master/images/rdkafka-out-config.png">
+<img src="https://github.com/hjespers/node-red-contrib-rdkafka/blob/master/images/rdkafka-in-config.png">
 
 Click on the pencil icon to the right of the broker selection box to configure a kafka broker connection if one does not already exist.
 
