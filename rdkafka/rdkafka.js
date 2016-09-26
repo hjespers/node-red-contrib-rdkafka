@@ -30,14 +30,14 @@ module.exports = function(RED) {
             }, {});
             if (this.topic) {
                 instream = consumer.getReadStream(this.topic);
-                console.log('[rdkafka] Created input stream on topic = ' + this.topic);
-                console.log('[rdkafka]  group.id = ' + this.cgroup);
-                console.log('[rdkafka]  metadata.broker.list = ' + this.brokerConfig.broker);
+                util.log('[rdkafka] Created input stream on topic = ' + this.topic);
+                //console.log('[rdkafka]  group.id = ' + this.cgroup);
+                //console.log('[rdkafka]  metadata.broker.list = ' + this.brokerConfig.broker);
 
 
                 instream.on('data', function(data) {
-                  console.log('Got message');
-                  console.log(data.message.toString());
+                  //console.log('Got message');
+                  //console.log(data.message.toString());
                   var msg = {
                     payload : data.message.toString(),
                     topic : data.topic,
@@ -85,14 +85,13 @@ module.exports = function(RED) {
                'message.send.max.retries': 10,
                'socket.keepalive.enable': true,
                'queue.buffering.max.messages': 100000,
-               'queue.buffering.max.ms': 1000,
+               'queue.buffering.max.ms': 100,
                'batch.num.messages': 1000000,
-               'dr_cb': true,
                'session.timeout.ms': 5000    
             })
             if (this.topic != "" ) {
                 stream = producer.getWriteStream(this.topic);
-                console.log('[rdkafka] Created output stream with topic = ' + this.topic );
+                util.log('[rdkafka] Created output stream with topic = ' + this.topic );
             }
             // This call returns a new writable stream to our topic 'topic-name'
             this.status({fill:"green",shape:"dot",text:"connected"});
@@ -106,11 +105,11 @@ module.exports = function(RED) {
                     // Writes a message to the stream
                     var queuedSuccess = newstream.write(msg.payload.toString());
                     if (queuedSuccess) {
-                      console.log('[rdkafka] We queued our message using topic from msg.topic!');
+                      //console.log('[rdkafka] We queued our message using topic from msg.topic!');
                     } else {
                       // Note that this only tells us if the stream's queue is full,
                       // it does NOT tell us if the message got to Kafka!  See below...
-                      console.log('[rdkafka] Too many messages in our queue already');
+                      util.log('[rdkafka] Too many messages in our queue already');
                     }
 
                     stream.on('error', function (err) {
@@ -119,15 +118,14 @@ module.exports = function(RED) {
                       console.error(err);
                     })   
                 } else if (msg != null && this.topic != "" ) {
-                    console.log('***got here***');
-                    console.log('topic = ' + this.topic);
-                    console.log('msg.topic = ' + msg.topic);
-                    console.log('msg.payload = ' + msg.payload);
+                    //console.log('***got here***');
+                    //console.log('topic = ' + this.topic);
+                    //console.log('msg.topic = ' + msg.topic);
+                    //console.log('msg.payload = ' + msg.payload);
                     // Writes a message to the cached stream
-                    //var queuedSuccess = stream.write(new Buffer(msg.payload));
                     var queuedSuccess = stream.write(msg.payload.toString());
                     if (queuedSuccess) {
-                      console.log('[rdkafka] We queued our message!');
+                      //console.log('[rdkafka] We queued our message!');
                     } else {
                       // Note that this only tells us if the stream's queue is full,
                       // it does NOT tell us if the message got to Kafka!  See below...

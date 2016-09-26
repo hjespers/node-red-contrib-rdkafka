@@ -10,8 +10,8 @@
         <input type="text" id="node-input-topic" placeholder="Topic">
     </div>
     <div class="form-row">
-        <label for="node-input-cgroup"><i class="icon-tasks"></i> Consumer Group</label>
-        <input type="text" id="node-input-cgroup" placeholder="Consumer Group">
+        <label for="node-input-cgroup"><i class="icon-tasks"></i> Group ID</label>
+        <input type="text" id="node-input-cgroup" placeholder="Group ID">
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
@@ -29,7 +29,7 @@
        defaults: {
          name: {value:""},
          topic: {value:"",required:true},
-         cgroup: {value:"rdkafka"},
+         cgroup: {value:"node-red-rdkafka"},
          broker: {type:"kafka-broker", required:true}
        },
        color:"#FFFFFF",
@@ -107,8 +107,6 @@
         defaults: {
             broker: { value:"",required:true },
             clientid: { value:"" }
-        },
-        credentials: {
         },
         label: function() {
             if (this.broker == "") { this.broker = "localhost:9092"; }
