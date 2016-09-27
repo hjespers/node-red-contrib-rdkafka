@@ -18,6 +18,7 @@ module.exports = function(RED) {
         this.brokerConfig = RED.nodes.getNode(this.broker);
         var node = this;
         var instream;
+        //var topic = this.topic;
         if (this.brokerConfig) {
             node.status({
                 fill: "red",
@@ -30,29 +31,32 @@ module.exports = function(RED) {
                     'client.id': this.brokerConfig.clientid,
                     'metadata.broker.list': this.brokerConfig.broker,
                     'socket.keepalive.enable': true,
-                    'batch.num.messages': 1000000,
-                    'fetch.wait.max.ms': 100,       //librkafka recommendation for low latency 
-                    'fetch.error.backoff.ms': 100,  //librkafka recommendation for low latency
-                    'queue.buffering.max.ms': 1     //librkafka recommendation for low latency
+                    'fetch.wait.max.ms': 1,      //librkafka recommendation for low latency 
+                    'fetch.error.backoff.ms': 1  //librkafka recommendation for low latency
                 }, {});
             } catch(e) {
                 console.log(e);
             }
 
-
-
+            // subscribe to kafka topic (if provided), otherwise print error message
             if (this.topic) {
                 try {
-                    instream = consumer.getReadStream(this.topic);
+                    //stream api
+                    instream = consumer.getReadStream(this.topic, {
+                        waitInterval: 0
+                    });
                 } catch(e) {
-                    // statements
-                    util.log('[rdkafka] Error creating consumer read stream:' +e);
+                    //util.log('[rdkafka] Error creating consumer read stream:' +e);
+                    util.log('[rdkafka] Error creating consumer connection:' +e);
                 }
                 
                 util.log('[rdkafka] Created input stream on topic = ' + this.topic);
-                //console.log('[rdkafka]  group.id = ' + this.cgroup);
-                //console.log('[rdkafka]  metadata.broker.list = ' + this.brokerConfig.broker);
 
+                node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text: "connected"
+                });                   
 
                 instream.on('data', function(data) {
                     //console.log('Got message');
@@ -79,11 +83,6 @@ module.exports = function(RED) {
                     console.error(err);
                 });
 
-                node.status({
-                    fill: "green",
-                    shape: "dot",
-                    text: "connected"
-                });
             } else {
                 this.error('missing input topic');
             }
@@ -114,19 +113,19 @@ module.exports = function(RED) {
                 producer = new Kafka.Producer({
                     'client.id': this.brokerConfig.clientid,
                     'metadata.broker.list': this.brokerConfig.broker,
-                    'compression.codec': 'gzip',
+                    //'compression.codec': 'gzip',
                     'retry.backoff.ms': 200,
-                    'message.send.max.retries': 10,
+                    'message.send.max.retries': 15,
                     'socket.keepalive.enable': true,
                     'queue.buffering.max.messages': 100000,
-                    'queue.buffering.max.ms': 100,
+                    'queue.buffering.max.ms': 10,
                     'batch.num.messages': 1000000
                 });    
             } catch(e) {
-                // statements
                 console.log(e);
             }
 
+            // if kafka topic is specified it takes precidence over msg.topic so just create a output stream once and reuse it
             if (this.topic != "") {
                 try {
                     stream = producer.getWriteStream(this.topic);
@@ -138,7 +137,6 @@ module.exports = function(RED) {
                         console.error(err);
                     }); 
                 } catch (e) {
-                    // statements
                     util.log('[rdkafka] error creating producer writestream: ' + e);
                 }
             }
@@ -153,19 +151,18 @@ module.exports = function(RED) {
                 if (msg == null || (msg.topic == "" && this.topic == "")) {
                     util.log("[rdkafka] request to send a NULL message or NULL topic on session: " + this.client.ref + " object instance: " + this.client[("_instances")]);
                 } else if (msg != null && msg.topic != "" && this.topic == "") {
-                    // use the topic on the message
+                    // use the topic specified on the message since one is not configured 
                     try {
                         var newstream = producer.getWriteStream(msg.topic);
                     } catch (e) {
                         // statements
-                        util.log('[rdkafka] error creating producer writestream : ' + e);
+                        util.log('[rdkafka] error creating producer write stream : ' + e);
                     }
 
                     // Writes a message to the stream
                     try {
                         var queuedSuccess = newstream.write(msg.payload.toString());
                     } catch(e) {
-                        // statements
                         util.log('[rdkafka] error writing to producer writestream: ' + e);
                     }
 
@@ -192,12 +189,6 @@ module.exports = function(RED) {
                         // it does NOT tell us if the message got to Kafka!  See below...
                         util.log('[rdkafka]Too many messages in our queue already');
                     }
-/*
-                    stream.on('error', function(err) {
-                        // Here's where we'll know if something went wrong sending to Kafka
-                        util.error('[rdkafka] Error in our kafka stream');
-                        console.error(err);
-                    }); */
                 }
             });
         } else {
