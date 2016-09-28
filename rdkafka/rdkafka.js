@@ -15,6 +15,7 @@ module.exports = function(RED) {
         this.topic = n.topic;
         this.broker = n.broker;
         this.cgroup = n.cgroup;
+        this.autocommit = n.autocommit;
         this.brokerConfig = RED.nodes.getNode(this.broker);
         var node = this;
         var instream;
@@ -31,8 +32,11 @@ module.exports = function(RED) {
                     'client.id': this.brokerConfig.clientid,
                     'metadata.broker.list': this.brokerConfig.broker,
                     'socket.keepalive.enable': true,
-                    'fetch.wait.max.ms': 1,      //librkafka recommendation for low latency 
-                    'fetch.error.backoff.ms': 1  //librkafka recommendation for low latency
+                    'enable.auto.commit': this.autocommit,
+                    'queue.buffering.max.ms': 1,
+                    'fetch.min.bytes': 1,
+                    'fetch.wait.max.ms': 1,         //librkafka recommendation for low latency 
+                    'fetch.error.backoff.ms': 100   //librkafka recommendation for low latency
                 }, {});
             } catch(e) {
                 console.log(e);
@@ -90,7 +94,7 @@ module.exports = function(RED) {
             this.error("missing broker configuration");
         }
         this.on('close', function() {
-            consumer.disconnect();
+            //consumer.disconnect();
         });
     }
     RED.nodes.registerType("rdkafka in", RdKafkaInNode);
@@ -195,7 +199,7 @@ module.exports = function(RED) {
             this.error("[rdkafka] missing broker configuration");
         }
         this.on('close', function() {
-            producer.disconnect();
+            //producer.disconnect();
         });
     }
     RED.nodes.registerType("rdkafka out", RdKafkaOutNode);
