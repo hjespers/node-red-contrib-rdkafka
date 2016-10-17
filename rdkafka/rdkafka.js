@@ -66,12 +66,19 @@ module.exports = function(RED) {
                     //console.log('Got message');
                     //console.log(data.message.toString());
                     var msg = {
-                        payload: data.message.toString(),
                         topic: data.topic,
                         offset: data.offset,
                         partition: data.partition,
                         size: data.size
                     };
+                    if (data.message) {
+                        msg.payload = data.message.toString();
+                    } else {
+                        msg.payload = ""; //in case of msg with null value
+                    }
+                    if (data.key) {
+                        msg.key = data.key.toString();
+                    }
                     try {
                         node.send(msg);
                     } catch(e) {

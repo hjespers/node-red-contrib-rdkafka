@@ -22,13 +22,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hjespers/node-red-contrib-rdkafka.git"
+    "url": "git+https://github.com/hjespers/node-red-contrib-rdkafka.git"
   },
-  "author" : {
-    "name" : "Hans Jespersen",
-    "email" : "hans@confluent.io",
-    "url" : "https://github.com/hjespers"
-  },
+  "author": "Hans Jespersen <hans@confluent.io> (https://github.com/hjespers)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/hjespers/node-red-contrib-rdkafka/issues"
