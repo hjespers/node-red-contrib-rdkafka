@@ -159,6 +159,14 @@ module.exports = function(RED) {
             });
 
             this.on("input", function(msg) {
+                //handle different payload types including JSON object
+                var message;
+                if( typeof msg.payload === 'object') {
+                    message = JSON.stringify(msg.payload);
+                } else {
+                    message = msg.payload.toString();
+                }
+
                 if (msg == null || (msg.topic == "" && this.topic == "")) {
                     util.log("[rdkafka] request to send a NULL message or NULL topic on session: " + this.client.ref + " object instance: " + this.client[("_instances")]);
                 } else if (msg != null && msg.topic != "" && this.topic == "") {
@@ -172,7 +180,7 @@ module.exports = function(RED) {
 
                     // Writes a message to the stream
                     try {
-                        var queuedSuccess = newstream.write(msg.payload.toString());
+                        var queuedSuccess = newstream.write(message);
                     } catch(e) {
                         util.log('[rdkafka] error writing to producer writestream: ' + e);
                     }
@@ -192,7 +200,7 @@ module.exports = function(RED) {
                     });
                 } else if (msg != null && this.topic != "") {
                     // Writes a message to the cached stream
-                    var queuedSuccess = stream.write(msg.payload.toString());
+                    var queuedSuccess = stream.write(message);
                     if (queuedSuccess) {
                         //console.log('[rdkafka] We queued our message!');
                     } else {
