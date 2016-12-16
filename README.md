@@ -2,7 +2,7 @@
 
 Node-RED (http://nodered.org) nodes for publish/subscribe messaging using the new Apache Kafka Consumer/Producer API and without requiring direct communications with Zookeeper. Based on the the high performance librdkafka Apache Kafka C/C++ library (https://github.com/edenhill/librdkafka).
 
-Works with Apache Kafka 0.9 and 0.10 including Confluent Open Source and Enterprise distributions 2.0 and 3.0.
+Works with Apache Kafka 0.9.x and 0.10.x including Confluent Open Source and Confluent Enterprise version 2.x and 3.x.
 
 
 #Install
