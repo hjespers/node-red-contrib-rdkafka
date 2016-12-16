@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Node-Red module for Apache Kafka publish/subscribe using the Confluent librdkafka C library",
   "dependencies": {
-    "node-rdkafka": ">=0.4.2"
+    "node-rdkafka": "0.5.5"
   },
   "keywords": [
     "node-red",
