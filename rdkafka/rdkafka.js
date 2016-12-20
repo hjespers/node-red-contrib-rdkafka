@@ -214,7 +214,7 @@ module.exports = function(RED) {
             this.error("[rdkafka] missing broker configuration");
         }
         this.on('close', function() {
-            //producer.disconnect();
+            producer.disconnect();
         });
     }
     RED.nodes.registerType("rdkafka out", RdKafkaOutNode);
