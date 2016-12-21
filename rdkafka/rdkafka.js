@@ -64,17 +64,19 @@ module.exports = function(RED) {
 
                 instream.on('data', function(data) {
                     //console.log('Got message');
-                    //console.log(data.message.toString());
+                    //console.log(util.inspect(data));
                     var msg = {
                         topic: data.topic,
                         offset: data.offset,
                         partition: data.partition,
                         size: data.size
                     };
-                    if (data.message) {
-                        msg.payload = data.message.toString();
+                    if (data.value) {
+                        msg.payload = data.value.toString();
+                        //console.log(data.value.toString());
                     } else {
                         msg.payload = ""; //in case of msg with null value
+                        //console.log('data.value was null');
                     }
                     if (data.key) {
                         msg.key = data.key.toString();
