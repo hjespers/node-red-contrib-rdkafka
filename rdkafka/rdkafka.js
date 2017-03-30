@@ -48,18 +48,14 @@ module.exports = function(RED) {
                     // consumer event handlers
                     consumer
                         .on('ready', function() {
-
-                            console.log('[rdkafka] consumer is ready');
                             node.status({
                                 fill: "green",
                                 shape: "dot",
                                 text: "connected"
                             });  
-
                             consumer.subscribe([node.topic]);
                             consumer.consume();
                             util.log('[rdkafka] Created consumer subscription on topic = ' + node.topic);
-
                         })
                         .on('data', function(data) {
                             // Output the actual message contents
@@ -90,7 +86,6 @@ module.exports = function(RED) {
                             console.error('[rdkafka] Error in our kafka consumer');
                             console.error(err);
                         });
-
                 } catch(e) {
                     //util.log('[rdkafka] Error creating consumer read stream:' +e);
                     util.log('[rdkafka] Error creating consumer connection:' +e);
