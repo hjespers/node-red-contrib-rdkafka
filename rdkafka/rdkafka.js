@@ -127,7 +127,8 @@ module.exports = function(RED) {
                     'socket.keepalive.enable': true,
                     'queue.buffering.max.messages': 100000,
                     'queue.buffering.max.ms': 10,
-                    'batch.num.messages': 1000000
+                    'batch.num.messages': 1000000,
+                    'api.version.request': true  //added to force 0.10.x style timestamps on all messages
                 });    
             } catch(e) {
                 console.log(e);
