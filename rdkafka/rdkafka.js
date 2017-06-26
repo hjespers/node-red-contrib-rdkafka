@@ -39,7 +39,8 @@ module.exports = function(RED) {
                         'queue.buffering.max.ms': 1,
                         'fetch.min.bytes': 1,
                         'fetch.wait.max.ms': 1,         //librkafka recommendation for low latency 
-                        'fetch.error.backoff.ms': 100   //librkafka recommendation for low latency
+                        'fetch.error.backoff.ms': 100,   //librkafka recommendation for low latency
+                        'api.version.request': true
                     }, {});
 
                     // Setup Flowing mode
@@ -97,6 +98,11 @@ module.exports = function(RED) {
             node.error("missing broker configuration");
         }
         node.on('close', function() {
+            node.status({
+                fill: "red",
+                shape: "ring",
+                text: "disconnected"
+            });
             consumer.unsubscribe([node.topic]);
             consumer.disconnect();
         });
@@ -107,16 +113,19 @@ module.exports = function(RED) {
         RED.nodes.createNode(this, n);
         this.topic = n.topic;
         this.broker = n.broker;
+        this.key = n.key;
+        this.partition = Number(n.partition);           
         this.brokerConfig = RED.nodes.getNode(this.broker);
         var node = this;
-        var producer, stream;
+        var producer;
 
         if (node.brokerConfig !== undefined) {
-            this.status({
+            node.status({
                 fill: "red",
                 shape: "ring",
                 text: "disconnected"
             });
+
             try {
                 producer = new Kafka.Producer({
                     'client.id': node.brokerConfig.clientid,
@@ -129,83 +138,88 @@ module.exports = function(RED) {
                     'queue.buffering.max.ms': 10,
                     'batch.num.messages': 1000000,
                     'api.version.request': true  //added to force 0.10.x style timestamps on all messages
-                });    
+                });  
+
+                // Connect to the broker manually
+                producer.connect();
+
+                producer.on('ready', function() {
+                    util.log('[rdkafka] Connection to Kafka broker(s) is ready');
+                    // Wait for the ready event before proceeding
+                    node.status({
+                        fill: "green",
+                        shape: "dot",
+                        text: "connected"
+                    });
+                });
+
+                // Any errors we encounter, including connection errors
+                producer.on('error', function(err) {
+                    console.error('[ccloud] Error from producer: ' + err);
+                    node.status({
+                        fill: "red",
+                        shape: "ring",
+                        text: "error"
+                    });  
+                });
+
             } catch(e) {
                 console.log(e);
             }
 
-            // if kafka topic is specified it takes precidence over msg.topic so just create a output stream once and reuse it
-            if (this.topic !== "") {
-                try {
-                    stream = producer.getWriteStream(node.topic);
-                    util.log('[rdkafka] Created output stream with topic = ' + node.topic);
-
-                    stream.on('error', function(err) {
-                        // Here's where we'll know if something went wrong sending to Kafka
-                        util.error('[rdkafka] Error in our kafka stream');
-                        console.error(err);
-                    }); 
-                } catch (e) {
-                    util.log('[rdkafka] error creating producer writestream: ' + e);
-                }
-            }
-            // This call returns a new writable stream to our topic 'topic-name'
-            this.status({
-                fill: "green",
-                shape: "dot",
-                text: "connected"
-            });
-
             this.on("input", function(msg) {
                 //handle different payload types including JSON object
-                var message, newstream, queuedSuccess;
-                if( typeof msg.payload === 'object') {
-                    message = JSON.stringify(msg.payload);
+                var partition, key, topic, value, timestamp;
+
+                //set the partition  
+                if (this.partition && Number.isInteger(this.partition) && this.partition >= 0){
+                    partition = this.partition;
+                } else if(msg.partition && Number.isInteger(msg.partition) && Number(msg.partition) >= 0) {
+                    partition = Number(msg.partition);
                 } else {
-                    message = msg.payload.toString();
+                    partition = -1;
                 }
 
-                if (msg === null || (msg.topic === "" && node.topic === "")) {
-                    util.log("[rdkafka] request to send a NULL message or NULL topic");
-                } else if (msg !== null && msg.topic !== "" && node.topic === "") {
-                    // use the topic specified on the message since one is not configured 
-                    try {
-                        newstream = producer.getWriteStream(msg.topic);
-                    } catch (e) {
-                        // statements
-                        util.log('[rdkafka] error creating producer write stream : ' + e);
-                    }
+                //set the key
+                if ( this.key ) {
+                    key = this.key;
+                } else if ( msg.key ) {
+                    key = msg.key;
+                } else {
+                    key = null;
+                }
 
-                    // Writes a message to the stream
-                    try {
-                        queuedSuccess = newstream.write(message);
-                    } catch(e) {
-                        util.log('[rdkafka] error writing to producer writestream: ' + e);
-                    }
+                //set the topic
+                if (this.topic === "" && msg.topic !== "") {
+                    topic = msg.topic;
+                } else {
+                    topic = this.topic;
+                }
 
-                    if (queuedSuccess) {
-                        //console.log('[rdkafka] We queued our message using topic from msg.topic!');
-                    } else {
-                        // Note that this only tells us if the stream's queue is full,
-                        // it does NOT tell us if the message got to Kafka!  See below...
-                        util.log('[rdkafka] Too many messages in our queue already');
-                    }
+                //set the value
+                if( typeof msg.payload === 'object') {
+                    value = JSON.stringify(msg.payload);
+                } else {
+                    value = msg.payload.toString();
+                }
 
-                    newstream.on('error', function(err) {
-                        // Here's where we'll know if something went wrong sending to Kafka
-                        console.error('[rdkafka] Error in our kafka stream');
-                        console.error(err);
-                    });
-                } else if (msg !== null && node.topic !== "") {
-                    // Writes a message to the cached stream
-                    queuedSuccess = stream.write(message);
-                    if (queuedSuccess) {
-                        //console.log('[rdkafka] We queued our message!');
-                    } else {
-                        // Note that this only tells us if the stream's queue is full,
-                        // it does NOT tell us if the message got to Kafka!  See below...
-                        util.log('[rdkafka]Too many messages in our queue already');
-                    }
+                //set the timestamp
+                if( (new Date(msg.timestamp)).getTime() > 0 ) {
+                    timestamp = msg.timestamp;
+                } else if (msg.timestamp !== undefined) {
+                    console.log('[rdkafka] WARNING: Ignoring the following invalid timestamp on message:' + msg.timestamp);    
+                }
+
+                if (msg === null || topic === "") {
+                    util.log("[rdkafka] ignored request to send a NULL message or NULL topic");
+                } else {
+                    producer.produce(
+                      topic,                                // topic
+                      partition,                            // partition
+                      new Buffer(JSON.stringify(value)),    // value
+                      key,                                  // key
+                      timestamp                             // timestamp
+                    );
                 }
             });
         } else {
