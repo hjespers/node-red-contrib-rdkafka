@@ -155,7 +155,7 @@ module.exports = function(RED) {
 
                 // Any errors we encounter, including connection errors
                 producer.on('error', function(err) {
-                    console.error('[ccloud] Error from producer: ' + err);
+                    console.error('[rdkafka] Error from producer: ' + err);
                     node.status({
                         fill: "red",
                         shape: "ring",
