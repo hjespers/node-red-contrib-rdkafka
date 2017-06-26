@@ -1,10 +1,6 @@
 {
   "name": "node-red-contrib-rdkafka",
-<<<<<<< HEAD
   "version": "0.2.0",
-=======
-  "version": "0.1.4",
->>>>>>> origin/master
   "description": "Node-Red module for Apache Kafka publish/subscribe using the Confluent librdkafka C library",
   "dependencies": {
     "node-rdkafka": "^1.0.4"
