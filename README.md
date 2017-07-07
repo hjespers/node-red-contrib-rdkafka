@@ -9,7 +9,7 @@ Node-RED (http://nodered.org) nodes for publish/subscribe messaging using the ne
 * Up to date support for Apache Kafka 0.9, 0.10, and 0.11 including Confluent version 2.x and 3.x
 * High performance through use of librdkafka C/C++ library (see https://github.com/edenhill/librdkafka) 
 * Up to date feature set from use of node-rdkafka node.js client (see https://github.com/Blizzard/node-rdkafka)
-* Tested on Linux, macOS, and (comming soon) Raspberry Pi / Raspbian Jessie
+* Tested on Linux, macOS, and Raspberry Pi / Raspbian Jessie
 * Supports dynamic topic selection via incoming msg.topic value
 * Supports dynamic partition selection via incoming msg.partition value
 * Supports event time timestamps (with Kafka 0.10+) via msg/timestamp value
