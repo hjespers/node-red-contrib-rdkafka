@@ -26,10 +26,10 @@ module.exports = function(RED) {
                 shape: "ring",
                 text: "disconnected"
             });
-            if (node.topic !== undefined) {  
+            if (node.topic !== undefined) {
                 // subscribe to kafka topic (if provided), otherwise print error message
-                try {   
-                    // create node-rdkafka consumer      
+                try {
+                    // create node-rdkafka consumer
                     consumer = new Kafka.KafkaConsumer({
                         'group.id': node.cgroup,
                         'client.id': node.brokerConfig.clientid,
@@ -38,14 +38,14 @@ module.exports = function(RED) {
                         'enable.auto.commit': node.autocommit,
                         'queue.buffering.max.ms': 1,
                         'fetch.min.bytes': 1,
-                        'fetch.wait.max.ms': 1,         //librkafka recommendation for low latency 
+                        'fetch.wait.max.ms': 1,         //librkafka recommendation for low latency
                         'fetch.error.backoff.ms': 100,   //librkafka recommendation for low latency
                         'api.version.request': true
                     }, {});
 
                     // Setup Flowing mode
                     consumer.connect();
-                
+
                     // consumer event handlers
                     consumer
                         .on('ready', function() {
@@ -53,7 +53,7 @@ module.exports = function(RED) {
                                 fill: "green",
                                 shape: "dot",
                                 text: "connected"
-                            });  
+                            });
                             consumer.subscribe([node.topic]);
                             consumer.consume();
                             util.log('[rdkafka] Created consumer subscription on topic = ' + node.topic);
@@ -114,7 +114,7 @@ module.exports = function(RED) {
         this.topic = n.topic;
         this.broker = n.broker;
         this.key = n.key;
-        this.partition = Number(n.partition);           
+        this.partition = Number(n.partition);
         this.brokerConfig = RED.nodes.getNode(this.broker);
         var node = this;
         var producer;
@@ -138,7 +138,7 @@ module.exports = function(RED) {
                     'queue.buffering.max.ms': 10,
                     'batch.num.messages': 1000000,
                     'api.version.request': true  //added to force 0.10.x style timestamps on all messages
-                });  
+                });
 
                 // Connect to the broker manually
                 producer.connect();
@@ -160,7 +160,7 @@ module.exports = function(RED) {
                         fill: "red",
                         shape: "ring",
                         text: "error"
-                    });  
+                    });
                 });
 
             } catch(e) {
@@ -171,7 +171,7 @@ module.exports = function(RED) {
                 //handle different payload types including JSON object
                 var partition, key, topic, value, timestamp;
 
-                //set the partition  
+                //set the partition
                 if (this.partition && Number.isInteger(this.partition) && this.partition >= 0){
                     partition = this.partition;
                 } else if(msg.partition && Number.isInteger(msg.partition) && Number(msg.partition) >= 0) {
@@ -207,7 +207,7 @@ module.exports = function(RED) {
                 if( (new Date(msg.timestamp)).getTime() > 0 ) {
                     timestamp = msg.timestamp;
                 } else if (msg.timestamp !== undefined) {
-                    console.log('[rdkafka] WARNING: Ignoring the following invalid timestamp on message:' + msg.timestamp);    
+                    console.log('[rdkafka] WARNING: Ignoring the following invalid timestamp on message:' + msg.timestamp);
                 }
 
                 if (msg === null || topic === "") {
@@ -216,7 +216,7 @@ module.exports = function(RED) {
                     producer.produce(
                       topic,                                // topic
                       partition,                            // partition
-                      new Buffer(JSON.stringify(value)),    // value
+                      new Buffer(value),                    // value
                       key,                                  // key
                       timestamp                             // timestamp
                     );
