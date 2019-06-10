@@ -7,8 +7,18 @@ module.exports = function(RED) {
         RED.nodes.createNode(this, n);
         this.broker = n.broker;
         this.clientid = n.clientid;
+        this.security_protocol = n.security_protocol || 'plaintext';
+        this.sasl_mechanism = n.sasl_mechanism || 'GSSAPI';
+        this.ssl_ca_location = n.ssl_ca_location;
+
+        this.ssl_support_enabled = Kafka.features.indexOf('ssl') >= 0;
     }
-    RED.nodes.registerType("kafka-broker", KafkaBrokerNode, {});
+    RED.nodes.registerType("kafka-broker", KafkaBrokerNode, {
+        credentials: {
+            sasl_username: { type: "text" },
+            sasl_password: { type: "password" }
+        }
+    });
 
     function RdKafkaInNode(n) {
         RED.nodes.createNode(this, n);
@@ -30,7 +40,7 @@ module.exports = function(RED) {
                 // subscribe to kafka topic (if provided), otherwise print error message
                 try {
                     // create node-rdkafka consumer
-                    consumer = new Kafka.KafkaConsumer({
+                    var options = {
                         'group.id': node.cgroup,
                         'client.id': node.brokerConfig.clientid,
                         'metadata.broker.list': node.brokerConfig.broker,
@@ -40,8 +50,16 @@ module.exports = function(RED) {
                         'fetch.min.bytes': 1,
                         'fetch.wait.max.ms': 1,         //librkafka recommendation for low latency
                         'fetch.error.backoff.ms': 100,   //librkafka recommendation for low latency
-                        'api.version.request': true
-                    }, {});
+                        'api.version.request': true,
+                        'security.protocol': node.brokerConfig.security_protocol,
+                        'sasl.mechanisms': node.brokerConfig.sasl_mechanism,
+                        'sasl.username': node.brokerConfig.credentials.sasl_username,
+                        'sasl.password': node.brokerConfig.credentials.sasl_password
+                    };
+                    if (node.brokerConfig.ssl_support_enabled) {
+                        options['ssl.ca.location'] = node.brokerConfig.ssl_ca_location;
+                    }
+                    consumer = new Kafka.KafkaConsumer(options, {});
 
                     // Setup Flowing mode
                     consumer.connect();
@@ -127,7 +145,7 @@ module.exports = function(RED) {
             });
 
             try {
-                producer = new Kafka.Producer({
+                var options = {
                     'client.id': node.brokerConfig.clientid,
                     'metadata.broker.list': node.brokerConfig.broker,
                     //'compression.codec': 'gzip',
@@ -137,8 +155,16 @@ module.exports = function(RED) {
                     'queue.buffering.max.messages': 100000,
                     'queue.buffering.max.ms': 10,
                     'batch.num.messages': 1000000,
-                    'api.version.request': true  //added to force 0.10.x style timestamps on all messages
-                });
+                    'api.version.request': true,  //added to force 0.10.x style timestamps on all messages
+                    'security.protocol': node.brokerConfig.security_protocol,
+                    'sasl.mechanisms': node.brokerConfig.sasl_mechanism,
+                    'sasl.username': node.brokerConfig.credentials.sasl_username,
+                    'sasl.password': node.brokerConfig.credentials.sasl_password
+                };
+                if (node.brokerConfig.ssl_support_enabled) {
+                    options['ssl.ca.location'] = node.brokerConfig.ssl_ca_location;
+                }
+                producer = new Kafka.Producer(options);
 
                 // Connect to the broker manually
                 producer.connect();
@@ -216,7 +242,7 @@ module.exports = function(RED) {
                     producer.produce(
                       topic,                                // topic
                       partition,                            // partition
-                      new Buffer(value),                    // value
+                      Buffer.from(value),                   // value
                       key,                                  // key
                       timestamp                             // timestamp
                     );
@@ -236,4 +262,9 @@ module.exports = function(RED) {
     }
     RED.nodes.registerType("rdkafka out", RdKafkaOutNode);
 
+
+    // allow the UI to query for the features that are enabled in the rdkafka library
+    RED.httpAdmin.get("/rdkafka", RED.auth.needsPermission('rdkafka.read'), function(req,res) {
+        res.json({ features : Kafka.features });
+    });
 };
