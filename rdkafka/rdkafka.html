@@ -44,7 +44,7 @@
        return this.name?"node_label_italic":"";
        }
     });
-                           
+
 </script>
 
 <script type="text/x-red" data-template-name="rdkafka out">
@@ -63,7 +63,7 @@
         <div class="form-row">
         <label for="node-input-partition"><i class="icon-tasks"></i> Partition</label>
         <input type="number" id="node-input-partition" placeholder="Partition">
-    </div>       
+    </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
@@ -87,7 +87,7 @@
          name: {value:""},
          topic: {value:""},
          key: {value:""},
-         partition: {value:-1},         
+         partition: {value:-1},
          broker: {type:"kafka-broker", required:true}
        },
        color:"#FFFFFF",
@@ -104,17 +104,87 @@
     });
 </script>
 
+
+<script type="text/x-red" data-help-name="kafka-broker">
+    <dl class="message-properties">
+        <dt>Broker List
+            <span class="property-type">string</span>
+        </dt>
+        <dd> Comma-separated list of Kafka brokers, in the form HOST1:PORT1[,HOST2:PORT2[...]] </dd>
+
+        <dt class="optional">Client ID <span class="property-type">string</span></dt>
+        <dd> Client identifier. Leave blank for an auto-generated client ID.</dd>
+
+        <dt>Security protocol
+            <span class="property-type">string</span>
+        </dt>
+        <dd> Protocol used to communicate with brokers. </dd>
+
+        <dt>SASL mechanism
+            <span class="property-type">string</span>
+        </dt>
+        <dd> SASL mechanism to use for authentication. </dd>
+
+        <dt class="optional">SASL username
+            <span class="property-type">string</span>
+        </dt>
+        <dd> SASL username for use with the PLAIN, and SCRAM-SHA mechanisms. </dd>
+
+        <dt class="optional">SASL password
+            <span class="property-type">string</span>
+        </dt>
+        <dd> SASL password for use with the PLAIN, and SCRAM-SHA mechanisms. </dd>
+
+        <dt class="optional">SSL CA location
+            <span class="property-type">string</span>
+        </dt>
+        <dd> The location (on the Node-RED server) of the CA certificate(s) to use to verify the Kafka broker's key. </dd>
+    </dl>
+</script>
+
 <script type="text/x-red" data-template-name="kafka-broker">
     <div class="form-row node-input-broker">
         <label for="node-config-input-broker"><i class="icon-bookmark"></i> Broker List</label>
         <input class="input-append-left" type="text" id="node-config-input-broker" placeholder="localhost:9092" style="width: 40%;" >
     </div>
     <div class="form-row">
-        <label for="node-config-input-clientid"><i class="icon-tag"></i> Client ID</label>
+        <label for="node-config-input-clientid">Client ID</label>
         <input type="text" id="node-config-input-clientid" placeholder="Leave blank for auto generated">
     </div>
-    <div class="form-tips">
-        <b>Note:</b>The "Broker List" is a list of Kafka Brokers in the form HOST1:PORT1[,HOST2:PORT2[...]]
+    <div class="form-row">
+        <label for="node-config-input-security_protocol">Security protocol</label>
+        <select type="text" id="node-config-input-security_protocol">
+            <option value="plaintext" selected="selected">plaintext</option>
+            <option value="ssl">ssl</option>
+            <option value="sasl_plaintext">sasl_plaintext</option>
+            <option value="sasl_ssl">sasl_ssl</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-sasl_mechanism">SASL mechanism</label>
+        <select type="text" id="node-config-input-sasl_mechanism">
+            <option value="GSSAPI" selected="selected">GSSAPI</option>
+            <option value="PLAIN">PLAIN</option>
+            <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
+            <option value="SCRAM-SHA-512">SCRAM-SHA-512</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-sasl_username">SASL username</label>
+        <input class="input-append-left" type="text" id="node-config-input-sasl_username" placeholder="">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-sasl_password">SASL password</label>
+        <input class="input-append-left" type="text" id="node-config-input-sasl_password" placeholder="">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-ssl_ca_location">SSL CA location</label>
+        <input class="input-append-left" type="text" id="node-config-input-ssl_ca_location" placeholder="">
+    </div>
+    <div id="help-rdkafka-ssl-support" class="form-tips">
+        <b>Note:</b> SSL support is not enabled. For more information about what is
+        required for SSL support, see the
+        <a href="https://github.com/Blizzard/node-rdkafka#requirements" target="_blank">node-rdkafka documentation</a>.
     </div>
 </script>
 
@@ -123,12 +193,37 @@
         category: 'config',
         defaults: {
             broker: { value:"",required:true },
-            clientid: { value:"" }
+            clientid: { value:"" },
+            security_protocol: { value: "plaintext", required: true },
+            sasl_mechanism: { value: "GSSAPI", required: true },
+            ssl_ca_location: { value: "", required: false }
+        },
+        credentials: {
+            sasl_username: { type: "text" },
+            sasl_password: { type: "password" }
         },
         label: function() {
             if (this.broker == "") { this.broker = "localhost:9092"; }
             return (this.clientid?this.clientid+"@":"")+this.broker;
+        },
+        oneditprepare: function() {
+            $.getJSON('rdkafka',function(data) {
+                if (data && data.features && data.features.indexOf('ssl') >= 0) {
+                    // rdkafka has been built with SSL support
+                    $("#help-rdkafka-ssl-support").hide();
+                    $("#node-config-input-ssl_ca_location").prop("disabled", false);
+                    $("#node-config-input-security_protocol").children('option[value="ssl"]').removeAttr("disabled");
+                    $("#node-config-input-security_protocol").children('option[value="sasl_ssl"]').removeAttr("disabled");
+                }
+                else {
+                    // rdkafka is missing SSL support
+                    $("#help-rdkafka-ssl-support").show();
+                    $("#node-config-input-ssl_ca_location").val("");
+                    $("#node-config-input-ssl_ca_location").prop("disabled", true);
+                    $("#node-config-input-security_protocol").children('option[value="ssl"]').attr("disabled", "");
+                    $("#node-config-input-security_protocol").children('option[value="sasl_ssl"]').attr("disabled", "");
+                }
+            });
         }
     });
 </script>
-
